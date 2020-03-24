@@ -16,6 +16,7 @@ from storages.utils import (
 )
 
 try:
+    from google.api_core import retry
     from google.cloud.exceptions import NotFound
     from google.cloud.storage import Blob, Client
     from google.cloud.storage.blob import _quote
@@ -34,7 +35,9 @@ class GoogleCloudFile(CompressedFileMixin, File):
         self.mime_type = mimetypes.guess_type(name)[0]
         self._mode = mode
         self._storage = storage
-        self.blob = storage.bucket.get_blob(name)
+        ensure_get_blob = storage.retry_handler(storage.bucket.get_blob)
+        self.blob = ensure_get_blob(name)
+        self.blob.upload_from_file = storage.retry_handler(self.blob.upload_from_file)
         if not self.blob and 'w' in mode:
             self.blob = Blob(
                 self.name, storage.bucket,
@@ -102,6 +105,20 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
         self._bucket = None
         self._client = None
 
+        # Wrap functions to provide an exponential backoff request logic
+        if self.retry:
+            # Some functions aren't available at this point
+            # so we'll keep the wrapper to wrap them later
+            self.retry_handler = retry.Retry(
+                initial=self.initial_delay,
+                maximum=self.max_delay,
+                deadline=self.deadline
+            )
+            self.bucket.delete_blob = self.retry_handler(self.bucket.delete_blob)
+            self._get_blob = self.retry_handler(self._get_blob)
+        else:
+            self.retry_handler = lambda func, on_error=None: func
+
     def get_default_settings(self):
         return {
             "project_id": setting('GS_PROJECT_ID'),
@@ -128,6 +145,10 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
             # roll over.
             "max_memory_size": setting('GS_MAX_MEMORY_SIZE', 0),
             "blob_chunk_size": setting('GS_BLOB_CHUNK_SIZE'),
+            "retry": setting('GS_RETRY', False),
+            "initial_delay": setting('GS_INITIAL_DELAY', 1.0),
+            "max_delay": setting('GS_MAX_DELAY', 60.0),
+            "deadline": setting('GS_DEADLINE', 120.0),
         }
 
     @property
