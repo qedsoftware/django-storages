@@ -37,11 +37,12 @@ class GoogleCloudFile(CompressedFileMixin, File):
         self._storage = storage
         ensure_get_blob = storage.retry_handler(storage.bucket.get_blob)
         self.blob = ensure_get_blob(name)
-        self.blob.upload_from_file = storage.retry_handler(self.blob.upload_from_file)
         if not self.blob and 'w' in mode:
             self.blob = Blob(
                 self.name, storage.bucket,
                 chunk_size=storage.blob_chunk_size)
+        if self.blob:
+            self.blob.upload_from_file = storage.retry_handler(self.blob.upload_from_file)
         self._file = None
         self._is_dirty = False
 
