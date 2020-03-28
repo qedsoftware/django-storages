@@ -114,11 +114,11 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
                 maximum=self.max_delay,
                 deadline=self.deadline
             )
+            # Wrap functions to provide an exponential backoff request logic
+            self._apply_backoff()
         else:
             self.retry_handler = lambda func, on_error=None: func
 
-        # Wrap functions to provide an exponential backoff request logic
-        self._apply_backoff()
 
     def _apply_backoff(self):
         self.client.create_bucket = self.retry_handler(self.client.create_bucket)
@@ -174,26 +174,6 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
             self._bucket = self.client.bucket(self.bucket_name)
         return self._bucket
 
-<<<<<<< HEAD
-=======
-    def _get_or_create_bucket(self, name):
-        """
-        Returns bucket. If auto_create_bucket is True, creates bucket if it
-        doesn't exist.
-        """
-        bucket = self.client.bucket(name)
-        if self.auto_create_bucket:
-            try:
-                new_bucket = self.client.create_bucket(name)
-                ensure_save_predefined = self.retry_handler(new_bucket.acl.save_predefined)
-                ensure_save_predefined(self.auto_create_acl)
-                return new_bucket
-            except Conflict:
-                # Bucket already exists
-                pass
-        return bucket
-
->>>>>>> 7dd1548 (Wrapped methods that make requests into a handler)
     def _normalize_name(self, name):
         """
         Normalizes the name so that paths like /path/to/ignored/../something.txt
