@@ -119,7 +119,6 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
         else:
             self.retry_handler = lambda func, on_error=None: func
 
-
     def _apply_backoff(self):
         self.client.create_bucket = self.retry_handler(self.client.create_bucket)
         self.bucket.delete_blob = self.retry_handler(self.bucket.delete_blob)
@@ -260,11 +259,18 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
         if name and not name.endswith('/'):
             name += '/'
 
-        iterator = self.bucket.list_blobs(name, delimiter='/')
+        # Iterating manually to use a retry handled version of function
+        iterator = self.bucket.list_blobs(prefix=name, delimiter='/')
         actual_iterator = iter(iterator)
-        actual_iterator.__next__ = self.retry_handler(actual_iterator.__next__)
-        blobs = list(actual_iterator)
+        ensure_next = self.retry_handler(next)
+
+        blobs = []
         prefixes = iterator.prefixes
+        while True:
+            try:
+                blobs.append(ensure_next(actual_iterator))
+            except StopIteration:
+                break
 
         files = []
         dirs = []
