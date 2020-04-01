@@ -114,9 +114,12 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
         self._client = None
 
         if self.retry:
+            predicate = retry.if_exception_type(*self.retryable) if self.retryable else retry.if_transient_error
+
             # Most functions aren't available at this point
             # so we'll keep this wrapper to wrap them later
             self.retry_handler = retry.Retry(
+                predicate=predicate,
                 initial=self.initial_delay,
                 maximum=self.max_delay,
                 deadline=self.deadline
@@ -155,6 +158,7 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
             "initial_delay": setting('GS_INITIAL_DELAY', 1.0),
             "max_delay": setting('GS_MAX_DELAY', 60.0),
             "deadline": setting('GS_DEADLINE', 120.0),
+            "retryable": setting('GS_RETRYABLE', None),
         }
 
     @property
