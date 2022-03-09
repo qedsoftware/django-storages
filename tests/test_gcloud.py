@@ -7,9 +7,9 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
 from django.test import TestCase, override_settings
 from django.utils import timezone
+from google.api_core import exceptions
 from google.cloud.exceptions import NotFound
 from google.cloud.storage.blob import Blob
-from google.api_core import exceptions
 
 from storages.backends import gcloud
 from tests.utils import NonSeekableContentFile
