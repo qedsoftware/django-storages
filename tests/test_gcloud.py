@@ -617,24 +617,6 @@ class GCloudStorageTests(GCloudTestCase):
             storage.get_created_time(self.filename)
             storage.exists(self.filename)
 
-    @mock.patch("storages.backends.gcloud.Client.return_value")
-    def test_complete_failed_request_bucket_managing(self, client_mock):
-        storage = gcloud.GoogleCloudStorage(retry=True, initial_delay=0.01, max_delay=0.02, auto_create_bucket=True)
-
-        # "None" from the original list isn't acceptable here
-        local_side_effects = self.retry_side_effects[:4]
-        local_side_effects[-1] = mock.MagicMock()
-
-        create_mock = client_mock.create_bucket
-        create_mock.side_effects = local_side_effects
-        get_mock = client_mock.get_bucket
-        get_mock.side_effects = local_side_effects
-
-        storage.exists(None)
-
-        create_mock.assert_called_once()
-        get_mock.assert_called_once()
-
     @mock.patch.object(gcloud.GoogleCloudStorage, "_get_blobs")
     def test_complete_failed_request_dirs(self, get_blobs_mock):
         storage = gcloud.GoogleCloudStorage(retry=True, initial_delay=0.01, max_delay=0.02)
