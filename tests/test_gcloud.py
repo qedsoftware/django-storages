@@ -92,7 +92,7 @@ class GCloudStorageTests(GCloudTestCase):
         MockBlob().upload_from_file.assert_called_with(
             tmpfile, rewind=True,
             content_type=mimetypes.guess_type(self.filename)[0],
-            predefined_acl='projectPrivate', timeout=60)
+            predefined_acl='projectPrivate', timeout=60, retry=mock.ANY)
 
     def test_save(self):
         data = 'This is some test content.'
@@ -103,7 +103,7 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._client.bucket.assert_called_with(self.bucket_name)
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
             content, rewind=True, size=len(data), content_type=mimetypes.guess_type(self.filename)[0],
-            predefined_acl=None, timeout=60)
+            predefined_acl=None, timeout=60, retry=mock.ANY)
 
     def test_save2(self):
         data = 'This is some test ủⓝï℅ⅆℇ content.'
@@ -115,7 +115,7 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._client.bucket.assert_called_with(self.bucket_name)
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
             content, rewind=True, size=len(data), content_type=mimetypes.guess_type(filename)[0],
-            predefined_acl=None, timeout=60)
+            predefined_acl=None, timeout=60, retry=mock.ANY)
 
     def test_save_with_default_acl(self):
         data = 'This is some test ủⓝï℅ⅆℇ content.'
@@ -132,13 +132,15 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._client.bucket.assert_called_with(self.bucket_name)
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
             content, rewind=True, size=len(data), content_type=mimetypes.guess_type(filename)[0],
-            predefined_acl='publicRead', timeout=60)
+            predefined_acl='publicRead', timeout=60, retry=mock.ANY)
 
     def test_delete(self):
         self.storage.delete(self.filename)
 
         self.storage._client.bucket.assert_called_with(self.bucket_name)
-        self.storage._bucket.delete_blob.assert_called_with(self.filename, timeout=60)
+        self.storage._bucket.delete_blob.assert_called_with(
+            self.filename, timeout=60, retry=mock.ANY
+        )
 
     def test_exists(self):
         self.storage._bucket = mock.MagicMock()
@@ -419,6 +421,7 @@ class GCloudStorageTests(GCloudTestCase):
             predefined_acl=None,
             content_type=None,
             timeout=60,
+            retry=mock.ANY,
         )
 
     def test_storage_save_gzipped_non_seekable(self):
@@ -436,6 +439,7 @@ class GCloudStorageTests(GCloudTestCase):
             predefined_acl=None,
             content_type=None,
             timeout=60,
+            retry=mock.ANY,
         )
 
     def test_storage_save_gzip(self):
@@ -456,6 +460,7 @@ class GCloudStorageTests(GCloudTestCase):
             predefined_acl=None,
             content_type='text/css',
             timeout=60,
+            retry=mock.ANY,
         )
         args, kwargs = obj.upload_from_file.call_args
         content = args[0]
@@ -486,6 +491,7 @@ class GCloudStorageTests(GCloudTestCase):
             predefined_acl=None,
             content_type='text/css',
             timeout=60,
+            retry=mock.ANY,
         )
         args, kwargs = obj.upload_from_file.call_args
         content = args[0]

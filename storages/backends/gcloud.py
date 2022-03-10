@@ -20,7 +20,7 @@ try:
     from google.cloud.storage import Blob, Client
     from google.cloud.storage.blob import _quote
     from google.cloud.storage.retry import (
-        DEFAULT_RETRY, DEFAULT_RETRY_IF_GENERATION_SPECIFIED
+        DEFAULT_RETRY, DEFAULT_RETRY_IF_GENERATION_SPECIFIED,
     )
 except ImportError:
     raise ImproperlyConfigured("Could not load Google Cloud Storage bindings.\n"
