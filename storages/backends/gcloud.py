@@ -92,7 +92,7 @@ class GoogleCloudFile(CompressedFileMixin, File):
                     self.file, rewind=True, content_type=self.mime_type,
                     predefined_acl=blob_params.get('acl', self._storage.default_acl),
                     timeout=self._storage.timeout,
-                    retry=self._storage.retry_if_generation_specified_or_immutable)
+                    retry=self._storage.retry_policy__if_generation_specified_or_immutable)
             self._file.close()
             self._file = None
 
@@ -138,7 +138,7 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
         }
 
     @property
-    def retry_if_generation_specified_or_immutable(self):
+    def retry_policy__if_generation_specified_or_immutable(self):
         if self.all_files_immutable:
             return DEFAULT_RETRY
 
@@ -205,7 +205,7 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
             rewind=True,
             size=getattr(content, 'size', None),
             timeout=self.timeout,
-            retry=self.retry_if_generation_specified_or_immutable,
+            retry=self.retry_policy__if_generation_specified_or_immutable,
             **upload_params
         )
 
@@ -234,7 +234,7 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
             self.bucket.delete_blob(
                 name,
                 timeout=self.timeout,
-                retry=self.retry_if_generation_specified_or_immutable
+                retry=self.retry_policy__if_generation_specified_or_immutable
             )
         except NotFound:
             pass
