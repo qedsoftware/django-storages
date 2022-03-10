@@ -38,7 +38,8 @@ class GCloudStorageTests(GCloudTestCase):
 
         f = self.storage.open(self.filename)
         self.storage._client.bucket.assert_called_with(self.bucket_name)
-        self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60)
+        self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60,
+                                                         retry=mock.ANY)
 
         f.blob.download_to_file = lambda tmpfile, **kwargs: tmpfile.write(data)
         self.assertEqual(f.read(), data)
@@ -49,7 +50,8 @@ class GCloudStorageTests(GCloudTestCase):
 
         f = self.storage.open(self.filename)
         self.storage._client.bucket.assert_called_with(self.bucket_name)
-        self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60)
+        self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60,
+                                                         retry=mock.ANY)
 
         f.blob.download_to_file = lambda tmpfile, **kwargs: tmpfile.write(data)
         self.assertEqual(f.read(num_bytes), data[0:num_bytes])
@@ -59,7 +61,8 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._bucket.get_blob.return_value = None
 
         self.assertRaises(FileNotFoundError, self.storage.open, self.filename)
-        self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60)
+        self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60,
+                                                         retry=mock.ANY)
 
     def test_open_read_nonexistent_unicode(self):
         filename = 'ủⓝï℅ⅆℇ.txt'
@@ -145,12 +148,14 @@ class GCloudStorageTests(GCloudTestCase):
     def test_exists(self):
         self.storage._bucket = mock.MagicMock()
         self.assertTrue(self.storage.exists(self.filename))
-        self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60)
+        self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60,
+                                                         retry=mock.ANY)
 
         self.storage._bucket.reset_mock()
         self.storage._bucket.get_blob.return_value = None
         self.assertFalse(self.storage.exists(self.filename))
-        self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60)
+        self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60,
+                                                         retry=mock.ANY)
 
     def test_exists_no_bucket(self):
         # exists('') should return False if the bucket doesn't exist
@@ -235,7 +240,8 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._bucket.get_blob.return_value = blob
 
         self.assertEqual(self.storage.size(self.filename), size)
-        self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60)
+        self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60,
+                                                         retry=mock.ANY)
 
     def test_size_no_file(self):
         self.storage._bucket = mock.MagicMock()
@@ -256,7 +262,8 @@ class GCloudStorageTests(GCloudTestCase):
             mt = self.storage.modified_time(self.filename)
             self.assertTrue(timezone.is_naive(mt))
             self.assertEqual(mt, naive_date)
-            self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60)
+            self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60,
+                                                             retry=mock.ANY)
 
     def test_get_modified_time(self):
         naive_date = datetime(2017, 1, 2, 3, 4, 5, 678)
@@ -272,13 +279,15 @@ class GCloudStorageTests(GCloudTestCase):
             self.assertTrue(timezone.is_naive(mt))
             naive_date_montreal = timezone.make_naive(aware_date)
             self.assertEqual(mt, naive_date_montreal)
-            self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60)
+            self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60,
+                                                             retry=mock.ANY)
 
         with self.settings(TIME_ZONE='America/Montreal', USE_TZ=True):
             mt = self.storage.get_modified_time(self.filename)
             self.assertTrue(timezone.is_aware(mt))
             self.assertEqual(mt, aware_date)
-            self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60)
+            self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60,
+                                                             retry=mock.ANY)
 
     def test_get_created_time(self):
         naive_date = datetime(2017, 1, 2, 3, 4, 5, 678)
@@ -294,13 +303,15 @@ class GCloudStorageTests(GCloudTestCase):
             self.assertTrue(timezone.is_naive(mt))
             naive_date_montreal = timezone.make_naive(aware_date)
             self.assertEqual(mt, naive_date_montreal)
-            self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60)
+            self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60,
+                                                             retry=mock.ANY)
 
         with self.settings(TIME_ZONE='America/Montreal', USE_TZ=True):
             mt = self.storage.get_created_time(self.filename)
             self.assertTrue(timezone.is_aware(mt))
             self.assertEqual(mt, aware_date)
-            self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60)
+            self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60,
+                                                             retry=mock.ANY)
 
     def test_modified_time_no_file(self):
         self.storage._bucket = mock.MagicMock()
@@ -387,7 +398,8 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage.file_overwrite = False
         self.assertEqual(self.storage.get_available_name(
             self.filename), self.filename)
-        self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60)
+        self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60,
+                                                         retry=mock.ANY)
 
     def test_get_available_name_unicode(self):
         filename = 'ủⓝï℅ⅆℇ.txt'
