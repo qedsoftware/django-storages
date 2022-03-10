@@ -221,6 +221,13 @@ Sometimes requests can get stuck, so it's better if the timeout is low, couple o
 Timeouts will be automatically retried when using `google-cloud-storage` version that includes
 https://github.com/googleapis/python-storage/pull/727
 
+``GS_ALL_FILES_IMMUTABLE`` (optional: default is ``False``)
+
+When set to `True` requests that normally require the generation parameter to be retryable, will be always retried.
+
+This is safe only when for every path only the same content is ever possible, and there is no chance for race conditions
+between upload and delete.
+
 Usage
 -----
 

@@ -19,6 +19,9 @@ try:
     from google.cloud.exceptions import NotFound
     from google.cloud.storage import Blob, Client
     from google.cloud.storage.blob import _quote
+    from google.cloud.storage.retry import (
+        DEFAULT_RETRY, DEFAULT_RETRY_IF_GENERATION_SPECIFIED
+    )
 except ImportError:
     raise ImproperlyConfigured("Could not load Google Cloud Storage bindings.\n"
                                "See https://github.com/GoogleCloudPlatform/gcloud-python")
@@ -88,7 +91,8 @@ class GoogleCloudFile(CompressedFileMixin, File):
                 self.blob.upload_from_file(
                     self.file, rewind=True, content_type=self.mime_type,
                     predefined_acl=blob_params.get('acl', self._storage.default_acl),
-                    timeout=self._storage.timeout)
+                    timeout=self._storage.timeout,
+                    retry=self._storage.retry_if_generation_specified_or_immutable)
             self._file.close()
             self._file = None
 
@@ -129,8 +133,16 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
             # roll over.
             "max_memory_size": setting('GS_MAX_MEMORY_SIZE', 0),
             "blob_chunk_size": setting('GS_BLOB_CHUNK_SIZE'),
-            "timeout": setting('GS_TIMEOUT', 60)
+            "timeout": setting('GS_TIMEOUT', 60),
+            "all_files_immutable": setting('GS_ALL_FILES_IMMUTABLE', False),
         }
+
+    @property
+    def retry_if_generation_specified_or_immutable(self):
+        if self.all_files_immutable:
+            return DEFAULT_RETRY
+
+        return DEFAULT_RETRY_IF_GENERATION_SPECIFIED
 
     @property
     def client(self):
@@ -188,10 +200,15 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
         for prop, val in blob_params.items():
             setattr(file_object.blob, prop, val)
 
-        file_object.blob.upload_from_file(content, rewind=True,
-                                          size=getattr(content, 'size', None),
-                                          timeout=self.timeout,
-                                          **upload_params)
+        file_object.blob.upload_from_file(
+            content,
+            rewind=True,
+            size=getattr(content, 'size', None),
+            timeout=self.timeout,
+            retry=self.retry_if_generation_specified_or_immutable,
+            **upload_params
+        )
+
         return cleaned_name
 
     def get_object_parameters(self, name):
@@ -214,7 +231,11 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
     def delete(self, name):
         name = self._normalize_name(clean_name(name))
         try:
-            self.bucket.delete_blob(name, timeout=self.timeout)
+            self.bucket.delete_blob(
+                name,
+                timeout=self.timeout,
+                retry=self.retry_if_generation_specified_or_immutable
+            )
         except NotFound:
             pass
 
